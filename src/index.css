@@ -1,12 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-preproute-blue: #6366f1; /* the Login button / indigo accent */
-  --color-preproute-bg: #f7fbff; /* the light gray panel background */
-  --color-preproute-primary: #5988ef; /* login button */
-  --color-login-form-border: #60a5fa; /* semantic-border-strong */
-  --color-input-placeholder: #d1d5db; /* semantic-text-color-disabled */
+  --color-preproute-blue: #6366f1;
+  --color-preproute-bg: #f7fbff;
+  --color-preproute-primary: #5988ef;
+
+  --color-login-form-border: #60a5fa;
+  --color-input-placeholder: #d1d5db;
   --color-text-gray: #374151;
   --color-input-border: #9ca3af;
   --color-primary-brand: #1b5def;
+
+  --color-brand-semiWhite: #f8faff;
+
+  /* Sidebar */
+  --color-sidebar-border: #e5e7eb;
+  --color-sidebar-text: #6b7180;
+  --color-sidebar-active-bg: #f5f7ff;
+  --color-sidebar-active: #384ec7;
 }

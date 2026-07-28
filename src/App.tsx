@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-// import DashboardPage from './pages/DashboardPage'; // next step
+import AppLayout from "./components/AppLayout";
+import TestFormPage from "./pages/TestFormPage";
 
 export default function App() {
   return (
@@ -10,7 +11,9 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
 
         <Route element={<ProtectedRoute />}>
-          {/* <Route path="/dashboard" element={<DashboardPage />} /> */}
+          <Route element={<AppLayout />}>
+            <Route path="/tests/create" element={<TestFormPage />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />

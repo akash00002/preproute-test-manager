@@ -37,7 +37,7 @@ export default function LoginPage() {
     try {
       const response = await login(values.userId, values.password);
       setAuth(response.data.token, response.data.user);
-      navigate("/dashboard");
+      navigate("/tests/create");
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Login failed");
     } finally {
