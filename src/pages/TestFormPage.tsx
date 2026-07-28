@@ -25,8 +25,9 @@ const testSchema = z.object({
   total_questions: z.coerce.number().min(1, "Number of questions is required"),
 });
 
-type TestFormInput = z.input<typeof testSchema>; // before coercion (total_time: string, etc.)
-type TestFormOutput = z.output<typeof testSchema>; // after coercion (total_time: number, etc.)
+// Form inputs start as strings, but the submit handler receives coerced numbers.
+type TestFormInput = z.input<typeof testSchema>;
+type TestFormOutput = z.output<typeof testSchema>;
 
 const tabs: { key: TestTab; label: string }[] = [
   { key: "chapterwise", label: "Chapterwise" },
@@ -71,7 +72,7 @@ export default function TestFormPage() {
   const selectedTopic = watch("topics");
   const totalQuestions = watch("total_questions");
 
-  // Total marks is derived, not user-entered.
+  // Total marks is derived locally so the user gets instant feedback while editing.
   const totalMarks =
     (Number(totalQuestions) || 0) * (Number(correctMarks) || 0);
 
@@ -81,9 +82,8 @@ export default function TestFormPage() {
       .catch(() => setDropdownError("Failed to load subjects"));
   }, []);
 
-  // When subject changes, clear any stale topic/sub-topic selection
-  // that belonged to the previous subject.
   useEffect(() => {
+    // Changing the subject invalidates the topic chain, so reset it before loading new options.
     setValue("topics", "");
     setValue("sub_topics", "");
     setTopics([]);
@@ -99,8 +99,8 @@ export default function TestFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSubject]);
 
-  // When topic changes, clear any stale sub-topic selection.
   useEffect(() => {
+    // Sub-topics are scoped to a single topic; clear old values before fetching replacements.
     setValue("sub_topics", "");
     setSubTopics([]);
 
@@ -117,6 +117,7 @@ export default function TestFormPage() {
   const onSubmit = async (values: TestFormOutput) => {
     setSubmitError(null);
 
+    // The API accepts arrays for topics and sub-topics, even though this screen selects one.
     const payload = {
       name: values.name,
       type: activeTab,
@@ -135,6 +136,7 @@ export default function TestFormPage() {
 
     try {
       const response = await createTest(payload);
+      // Keep the draft around for the question step so it does not have to refetch immediately.
       setTestId(response.data.id);
       setTestData(payload);
       navigate("/tests/add-questions");
@@ -147,14 +149,12 @@ export default function TestFormPage() {
 
   return (
     <div>
-      {/* Breadcrumb */}
       <p className="text-sm text-gray-500 mb-6">
         Test Creation <span className="mx-1">/</span> Create Test{" "}
         <span className="mx-1">/</span>{" "}
         <span className="text-gray-900">Chapter Wise</span>
       </p>
 
-      {/* Tabs */}
       <div className="inline-flex bg-gray-50 rounded-lg p-1 mb-8">
         {tabs.map((tab) => (
           <button
@@ -178,7 +178,6 @@ export default function TestFormPage() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-          {/* Subject */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Subject
@@ -201,7 +200,6 @@ export default function TestFormPage() {
             )}
           </div>
 
-          {/* Name of Test */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Name of Test
@@ -216,7 +214,6 @@ export default function TestFormPage() {
             )}
           </div>
 
-          {/* Topic */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Topic
@@ -242,7 +239,6 @@ export default function TestFormPage() {
             )}
           </div>
 
-          {/* Sub Topic */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Sub Topic
@@ -263,7 +259,6 @@ export default function TestFormPage() {
             </select>
           </div>
 
-          {/* Duration */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Duration (Minutes)
@@ -281,7 +276,6 @@ export default function TestFormPage() {
             )}
           </div>
 
-          {/* Difficulty */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Test Difficulty Level
@@ -311,7 +305,6 @@ export default function TestFormPage() {
           </div>
         </div>
 
-        {/* Marking Scheme */}
         <div className="mt-8">
           <p className="font-medium text-gray-900 mb-4">Marking Scheme:</p>
           <div className="grid grid-cols-2 gap-x-12 gap-y-6">
@@ -374,7 +367,6 @@ export default function TestFormPage() {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex justify-end items-center gap-4 mt-10">
           {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
           <button

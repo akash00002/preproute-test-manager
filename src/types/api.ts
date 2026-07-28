@@ -1,5 +1,4 @@
-// Generic API response wrapper — matches what the server actually returns
-// (status: "success"/"error", not a boolean "success" as the doc claims)
+// The backend sends status as a string, even though the API docs mention a boolean.
 export interface ApiResponse<T> {
   status: "success" | "error";
   message?: string;
@@ -41,6 +40,7 @@ export interface SubTopic {
   topic_id: string;
 }
 
+// New tests are created without a status until the question flow is complete.
 export type TestStatus = "draft" | "live" | null;
 
 export interface Test {

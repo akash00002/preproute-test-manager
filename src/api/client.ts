@@ -8,7 +8,7 @@ const client = axios.create({
   },
 });
 
-// Attach JWT to every request automatically
+// Read the token at request time so restored sessions and fresh logins both work.
 client.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) {
@@ -17,15 +17,14 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
-// Unwrap the { status, message, data } envelope, and handle auth errors globally
 client.interceptors.response.use(
   (response) => {
-    // Return just the `data` field's contents to callers
+    // API helpers expect the backend envelope, not the full Axios response.
     return response.data;
   },
   (error: AxiosError<{ status: string; message: string }>) => {
     if (error.response?.status === 401) {
-      // Token expired/invalid — force logout
+      // Clear auth once the server says this session is no longer valid.
       useAuthStore.getState().logout();
     }
     const message =

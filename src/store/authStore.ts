@@ -19,6 +19,7 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (token, user) => set({ token, user, isAuthenticated: true }),
       logout: () => set({ token: null, user: null, isAuthenticated: false }),
     }),
-    { name: "auth-storage" }, // persists to localStorage automatically
+    // Zustand stores this in localStorage, which lets reloads keep the current session.
+    { name: "auth-storage" },
   ),
 );

@@ -13,8 +13,11 @@
 
   --color-brand-semiWhite: #f8faff;
 
-  /* Sidebar */
-  --color-sidebar-border: #e5e7eb;
+  --color-border: #e5e7eb;
+  --color-border-medium: #d1d5db;
+
+  --color-success: #0c9d61;
+
   --color-sidebar-text: #6b7180;
   --color-sidebar-active-bg: #f5f7ff;
   --color-sidebar-active: #384ec7;

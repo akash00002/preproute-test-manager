@@ -25,8 +25,7 @@ const navItems = [
 
 export default function Sidebar() {
   return (
-    <aside className="w-60 h-screen shrink-0 bg-white border-r border-sidebar-border flex flex-col">
-      {/* Logo */}
+    <aside className="w-60 h-screen shrink-0 bg-white border-r border-border flex flex-col">
       <div className="w-42.25 h-10.25 mt-5.75 ml-5.5">
         <img
           src={logo}
@@ -35,17 +34,17 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* Navigation */}
       <nav className="mt-11.5 flex flex-col gap-1.25 px-0.5">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
+            // Keep the active border in the same flow as every item to avoid a width jump.
             className={({ isActive }) =>
               `mx-0.5 h-11.5 rounded-lg flex items-center gap-2.25 p-2.5 text-base font-medium transition-colors border-l-[5px] ${
                 isActive
-                  ? "bg-brand-semiWhite text-sidebar-active border-sidebar-active" // Colored border when active
-                  : "text-sidebar-text hover:bg-gray-50 border-transparent" // Transparent border when inactive
+                  ? "bg-brand-semiWhite text-sidebar-active border-sidebar-active"
+                  : "text-sidebar-text hover:bg-gray-50 border-transparent"
               }`
             }
           >

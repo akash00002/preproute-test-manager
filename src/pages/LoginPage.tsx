@@ -36,6 +36,7 @@ export default function LoginPage() {
 
     try {
       const response = await login(values.userId, values.password);
+      // Persist auth before routing so protected pages can render on the first pass.
       setAuth(response.data.token, response.data.user);
       navigate("/tests/create");
     } catch (err) {
@@ -48,7 +49,6 @@ export default function LoginPage() {
   return (
     <div className="w-full min-h-screen md:h-screen md:overflow-hidden bg-preproute-bg">
       <div className="w-full h-full flex flex-col md:flex-row">
-        {/* Left side illustration */}
         <div className="flex w-full md:w-[47.9167%] h-56 md:h-full min-w-0 items-center justify-center bg-preproute-bg py-6 md:py-0">
           <img
             src={illustration}
@@ -57,23 +57,17 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* Right side login section */}
         <div className="w-full md:w-[52.0833%] flex-1 md:h-screen p-4 md:p-5 flex items-start md:items-center justify-center">
-          {/* Login card */}
           <div className="w-full md:h-full max-w-177.5 box-border bg-white border-[0.5px] border-login-form-border rounded-xl flex items-center justify-center px-5 md:px-6 lg:px-[clamp(40px,6.94vw,100px)] py-8 md:py-0">
-            {/* Login content */}
             <div className="w-full max-w-127.5 flex flex-col gap-5 md:gap-7.5">
               <div className="w-full flex flex-col gap-5 md:gap-7.5">
-                {/* Preproute logo */}
                 <img
                   src={logo}
                   alt="Preproute"
                   className="w-[134.745px] h-[33.039px] object-contain"
                 />
 
-                {/* Login form */}
                 <div className="w-full flex flex-col gap-5 md:gap-7.5">
-                  {/* Login heading and description */}
                   <div className="w-full max-w-65 flex flex-col gap-5">
                     <h1 className="m-0 text-xl font-semibold leading-[150%] text-text-gray">
                       Login
@@ -89,7 +83,6 @@ export default function LoginPage() {
                     onSubmit={handleSubmit(onSubmit)}
                     className="w-full flex flex-col gap-5 md:gap-7.5"
                   >
-                    {/* User ID field */}
                     <div className="w-full flex flex-col gap-3 md:gap-3.75">
                       <label
                         htmlFor="userId"
@@ -113,7 +106,6 @@ export default function LoginPage() {
                       )}
                     </div>
 
-                    {/* Password field */}
                     <div className="w-full flex flex-col gap-3 md:gap-3.75">
                       <div className="w-full flex flex-col gap-3 md:gap-3.75">
                         <label
@@ -139,7 +131,6 @@ export default function LoginPage() {
                         </p>
                       )}
 
-                      {/* Password recovery */}
                       <a
                         href="#"
                         className="w-fit text-sm font-normal leading-[150%] text-primary-brand pt-3.75"
@@ -148,7 +139,6 @@ export default function LoginPage() {
                       </a>
                     </div>
 
-                    {/* API error message */}
                     {serverError && (
                       <p className="text-sm text-red-500">{serverError}</p>
                     )}
@@ -156,7 +146,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Submit login */}
+              {/* The button sits outside the form to match the design spacing, so it targets the form by id. */}
               <button
                 type="submit"
                 form="login-form"
