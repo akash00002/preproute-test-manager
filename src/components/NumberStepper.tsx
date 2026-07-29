@@ -12,13 +12,13 @@ export default function NumberStepper({
   prefix = "",
 }: NumberStepperProps) {
   return (
-    <div className="flex items-center justify-between border border-gray-200 rounded-lg p-4 w-[150px] gap-2">
+    <div className="flex items-center justify-between border border-gray-200 rounded-lg p-4 w-37.5 gap-2">
       <span className="text-text-color font-medium">
         {value > 0 ? "+" : ""}
         {prefix}
         {value}
       </span>
-      <div className="w-6 h-6 flex flex-col items-center justify-center gap-[6px]">
+      <div className="w-6 h-6 flex flex-col items-center justify-center gap-1.5">
         <button
           type="button"
           onClick={() => onChange(value + 1)}

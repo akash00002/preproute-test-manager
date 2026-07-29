@@ -12,7 +12,7 @@ interface FormSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
   loading?: boolean;
   placeholder?: string;
-  currentValue?: string; // <- explicit, passed from parent's watch()
+  currentValue?: string;
 }
 
 const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
@@ -32,7 +32,7 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
     const hasValue = Boolean(currentValue);
 
     return (
-      <div className="flex flex-col gap-[15px]">
+      <div className="flex flex-col gap-3.75">
         <label className="text-base font-medium text-text-color leading-[150%]">
           {label}
         </label>
@@ -41,7 +41,7 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
             ref={ref}
             className={
               className ??
-              `w-full rounded-[12px] border-[0.5px] border-input-border bg-white p-4 text-base appearance-none transition-colors focus:border-preproute-primary focus:outline-none disabled:cursor-not-allowed ${hasValue ? "text-text-color" : "text-input-placeholder"}`
+              `w-full rounded-[12px] border-[0.5px] border-input-border bg-white p-4 pr-10 text-base appearance-none truncate transition-colors focus:border-preproute-primary focus:outline-none disabled:cursor-not-allowed ${hasValue ? "text-text-color" : "text-input-placeholder"}`
             }
             {...selectProps}
           >

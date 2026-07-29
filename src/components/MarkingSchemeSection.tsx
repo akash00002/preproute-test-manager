@@ -34,21 +34,21 @@ export default function MarkingSchemeSection<T extends FieldValues>({
     | undefined;
 
   return (
-    <div className="flex flex-col gap-[30px]">
+    <div className="flex flex-col gap-7.5">
       <p className="text-base font-medium text-text-gray leading-[150%]">
         Marking Scheme:
       </p>
 
-      <div className="grid grid-cols-2 items-start gap-x-[50px]">
-        {/* Wrong / Unattempted / Correct: gap-[50px] between the three steppers */}
-        <div className="flex gap-[50px]">
-          <div className="flex flex-col gap-[15px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-y-7.5 md:gap-x-12.5">
+        {/* Wrong / Unattempted / Correct: gap-[50px] between the three steppers on desktop, wraps on mobile */}
+        <div className="flex flex-wrap gap-5 md:gap-12.5">
+          <div className="flex flex-col gap-3.75">
             <label className="text-base font-medium text-text-gray leading-[150%]">
               Wrong Answer
             </label>
             <NumberStepper value={wrongMarks} onChange={onWrongChange} />
           </div>
-          <div className="flex flex-col gap-[15px]">
+          <div className="flex flex-col gap-3.75">
             <label className="text-base font-medium text-text-gray leading-[150%]">
               Unattempted
             </label>
@@ -57,7 +57,7 @@ export default function MarkingSchemeSection<T extends FieldValues>({
               onChange={onUnattemptChange}
             />
           </div>
-          <div className="flex flex-col gap-[15px]">
+          <div className="flex flex-col gap-3.75">
             <label className="text-base font-medium text-text-gray leading-[150%]">
               Correct Answer
             </label>
@@ -65,9 +65,9 @@ export default function MarkingSchemeSection<T extends FieldValues>({
           </div>
         </div>
 
-        {/* No of Questions / Total Marks: gap-[50px] between the two */}
-        <div className="flex gap-[50px]">
-          <div className="flex flex-col gap-[15px] flex-1">
+        {/* No of Questions / Total Marks: gap-[50px] between the two on desktop, stacks on mobile */}
+        <div className="flex flex-col sm:flex-row gap-5 md:gap-12.5">
+          <div className="flex flex-col gap-3.75 flex-1">
             <label className="text-base font-medium text-text-gray leading-[150%]">
               No of Questions
             </label>
@@ -84,7 +84,7 @@ export default function MarkingSchemeSection<T extends FieldValues>({
               <p className="text-red-500 text-xs">{totalQuestionsError}</p>
             )}
           </div>
-          <div className="flex flex-col gap-[15px] flex-1">
+          <div className="flex flex-col gap-3.75 flex-1">
             <label className="text-base font-medium text-input-placeholder leading-[150%]">
               Total Marks
             </label>

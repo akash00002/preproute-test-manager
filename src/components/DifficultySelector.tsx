@@ -12,16 +12,16 @@ export default function DifficultySelector({
   onChange,
 }: DifficultySelectorProps) {
   return (
-    <div className="flex flex-col gap-[30px]">
+    <div className="flex flex-col gap-7.5">
       <label className="text-base font-medium text-text-gray leading-[150%]">
         Test Difficulty Level
       </label>
 
-      <div className="flex h-6 w-[510px] items-center justify-between">
+      <div className="flex h-6 w-full max-w-127.5 items-center justify-between flex-wrap gap-y-4">
         {levels.map((level) => (
           <label
             key={level}
-            className="flex cursor-pointer items-center gap-[10px]"
+            className="flex cursor-pointer items-center gap-2.5"
           >
             <input
               type="radio"
