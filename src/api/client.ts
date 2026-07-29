@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 import { useAuthStore } from "../store/authStore";
 
 const client = axios.create({
-  baseURL: "/api",
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
