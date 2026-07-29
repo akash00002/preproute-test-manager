@@ -38,7 +38,7 @@ export default function LoginPage() {
       const response = await login(values.userId, values.password);
       // Persist auth before routing so protected pages can render on the first pass.
       setAuth(response.data.token, response.data.user);
-      navigate("/tests/create");
+      navigate("/tests/create/chapterwise");
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -68,12 +68,12 @@ export default function LoginPage() {
                 />
 
                 <div className="w-full flex flex-col gap-5 md:gap-7.5">
-                  <div className="w-full max-w-65 flex flex-col gap-5">
+                  <div className="w-full max-w-66 flex flex-col gap-5">
                     <h1 className="m-0 text-xl font-semibold leading-[150%] text-text-gray">
                       Login
                     </h1>
 
-                    <p className="m-0 text-xs font-normal leading-[150%] text-text-gray">
+                    <p className="m-0 w-full text-xs font-normal leading-[150%] text-text-gray">
                       Use your company provided Login credentials
                     </p>
                   </div>

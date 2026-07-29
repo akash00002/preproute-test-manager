@@ -1,13 +1,24 @@
 import { useAuthStore } from "../store/authStore";
+import { useUIStore } from "../store/uiStore";
 import notificationIcon from "../assets/notification.svg";
 import avatar from "../assets/avatar.png";
 import downArrow from "../assets/arrow-drop-down.svg";
+import hamburgerIcon from "../assets/hamburger.svg"; // swap for your actual asset name
 
 export default function Topbar() {
   const user = useAuthStore((state) => state.user);
+  const toggleSidebar = useUIStore((state) => state.toggleSidebar);
 
   return (
-    <header className="w-300 h-23 bg-white border-b border-border flex items-center justify-end p-5.25">
+    <header className="h-23 bg-white border-b border-border flex items-center justify-between md:justify-end p-5.25">
+      {/* Hamburger — mobile only */}
+      <button
+        onClick={toggleSidebar}
+        className="md:hidden w-10 h-10 flex items-center justify-center"
+      >
+        <img src={hamburgerIcon} alt="Open menu" className="w-6 h-6" />
+      </button>
+
       <div className="flex items-center gap-5">
         <button className="relative w-12 h-12 rounded-3xl border border-border-medium flex items-center justify-center hover:bg-gray-50 transition-colors">
           <img

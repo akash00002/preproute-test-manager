@@ -1,3 +1,5 @@
+import chevronIcon from "../assets/chevron-icon.svg";
+
 interface NumberStepperProps {
   value: number;
   onChange: (value: number) => void;
@@ -10,26 +12,32 @@ export default function NumberStepper({
   prefix = "",
 }: NumberStepperProps) {
   return (
-    <div className="flex items-center justify-between border border-gray-200 rounded-lg px-4 py-3 w-full">
-      <span className="text-gray-900 font-medium">
+    <div className="flex items-center justify-between border border-gray-200 rounded-lg p-4 w-[150px] gap-2">
+      <span className="text-text-color font-medium">
         {value > 0 ? "+" : ""}
         {prefix}
         {value}
       </span>
-      <div className="flex flex-col">
+      <div className="w-6 h-6 flex flex-col items-center justify-center gap-[6px]">
         <button
           type="button"
           onClick={() => onChange(value + 1)}
-          className="text-gray-400 hover:text-gray-600 text-xs leading-none"
+          className="flex items-center justify-center hover:opacity-70 hover:cursor-pointer"
+          aria-label="Increase"
         >
-          ▲
+          <img src={chevronIcon} alt="" className="w-[13.75px] h-[7.52px]" />
         </button>
         <button
           type="button"
           onClick={() => onChange(value - 1)}
-          className="text-gray-400 hover:text-gray-600 text-xs leading-none"
+          className="flex items-center justify-center hover:opacity-70 hover:cursor-pointer"
+          aria-label="Decrease"
         >
-          ▼
+          <img
+            src={chevronIcon}
+            alt=""
+            className="w-[13.75px] h-[7.52px] rotate-180"
+          />
         </button>
       </div>
     </div>

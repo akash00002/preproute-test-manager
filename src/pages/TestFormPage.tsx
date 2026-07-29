@@ -1,390 +1,163 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  getSubjects,
-  getTopicsBySubject,
-  getSubTopicsByTopic,
-} from "../api/subjects";
-import { createTest } from "../api/tests";
-import { useTestDraftStore } from "../store/testDraftStore";
-import NumberStepper from "../components/NumberStepper";
-import type { Subject, Topic, SubTopic } from "../types/api";
+import { login } from "../api/auth";
+import { useAuthStore } from "../store/authStore";
+import logo from "../assets/preproute-logo.svg";
+import illustration from "../assets/login-illustration.svg";
 
-type TestTab = "chapterwise" | "pyq" | "mock";
-
-const testSchema = z.object({
-  name: z.string().min(1, "Test name is required"),
-  subject: z.string().min(1, "Subject is required"),
-  topics: z.string().min(1, "Topic is required"),
-  sub_topics: z.string().optional(),
-  total_time: z.coerce.number().min(1, "Duration is required"),
-  difficulty: z.enum(["easy", "medium", "difficult"]),
-  total_questions: z.coerce.number().min(1, "Number of questions is required"),
+const loginSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
-// Form inputs start as strings, but the submit handler receives coerced numbers.
-type TestFormInput = z.input<typeof testSchema>;
-type TestFormOutput = z.output<typeof testSchema>;
+type LoginForm = z.infer<typeof loginSchema>;
 
-const tabs: { key: TestTab; label: string }[] = [
-  { key: "chapterwise", label: "Chapterwise" },
-  { key: "pyq", label: "PYQ" },
-  { key: "mock", label: "Mock Test" },
-];
-
-export default function TestFormPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
-  const setTestData = useTestDraftStore((state) => state.setTestData);
-  const setTestId = useTestDraftStore((state) => state.setTestId);
+  const setAuth = useAuthStore((state) => state.setAuth);
 
-  const [activeTab, setActiveTab] = useState<TestTab>("chapterwise");
-
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [topics, setTopics] = useState<Topic[]>([]);
-  const [subTopics, setSubTopics] = useState<SubTopic[]>([]);
-
-  const [topicsLoading, setTopicsLoading] = useState(false);
-  const [subTopicsLoading, setSubTopicsLoading] = useState(false);
-  const [dropdownError, setDropdownError] = useState<string | null>(null);
-
-  const [wrongMarks, setWrongMarks] = useState(-1);
-  const [unattemptMarks, setUnattemptMarks] = useState(0);
-  const [correctMarks, setCorrectMarks] = useState(5);
-
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
-    control,
     handleSubmit,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<TestFormInput, unknown, TestFormOutput>({
-    resolver: zodResolver(testSchema),
-    defaultValues: { difficulty: "easy" },
+    formState: { errors },
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
   });
 
-  const selectedSubject = watch("subject");
-  const selectedTopic = watch("topics");
-  const totalQuestions = watch("total_questions");
-
-  // Total marks is derived locally so the user gets instant feedback while editing.
-  const totalMarks =
-    (Number(totalQuestions) || 0) * (Number(correctMarks) || 0);
-
-  useEffect(() => {
-    getSubjects()
-      .then((res) => setSubjects(res.data))
-      .catch(() => setDropdownError("Failed to load subjects"));
-  }, []);
-
-  useEffect(() => {
-    // Changing the subject invalidates the topic chain, so reset it before loading new options.
-    setValue("topics", "");
-    setValue("sub_topics", "");
-    setTopics([]);
-    setSubTopics([]);
-
-    if (!selectedSubject) return;
-
-    setTopicsLoading(true);
-    getTopicsBySubject(selectedSubject)
-      .then((res) => setTopics(res.data))
-      .catch(() => setDropdownError("Failed to load topics"))
-      .finally(() => setTopicsLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSubject]);
-
-  useEffect(() => {
-    // Sub-topics are scoped to a single topic; clear old values before fetching replacements.
-    setValue("sub_topics", "");
-    setSubTopics([]);
-
-    if (!selectedTopic) return;
-
-    setSubTopicsLoading(true);
-    getSubTopicsByTopic(selectedTopic)
-      .then((res) => setSubTopics(res.data))
-      .catch(() => setDropdownError("Failed to load sub-topics"))
-      .finally(() => setSubTopicsLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTopic]);
-
-  const onSubmit = async (values: TestFormOutput) => {
-    setSubmitError(null);
-
-    // The API accepts arrays for topics and sub-topics, even though this screen selects one.
-    const payload = {
-      name: values.name,
-      type: activeTab,
-      subject: values.subject,
-      topics: [values.topics],
-      sub_topics: values.sub_topics ? [values.sub_topics] : [],
-      correct_marks: correctMarks,
-      wrong_marks: wrongMarks,
-      unattempt_marks: unattemptMarks,
-      difficulty: values.difficulty,
-      total_time: values.total_time,
-      total_marks: totalMarks,
-      total_questions: values.total_questions,
-      status: null,
-    };
+  const onSubmit = async (values: LoginForm) => {
+    setServerError(null);
+    setIsSubmitting(true);
 
     try {
-      const response = await createTest(payload);
-      // Keep the draft around for the question step so it does not have to refetch immediately.
-      setTestId(response.data.id);
-      setTestData(payload);
-      navigate("/tests/add-questions");
+      const response = await login(values.userId, values.password);
+      // Persist auth before routing so protected pages can render on the first pass.
+      setAuth(response.data.token, response.data.user);
+      navigate("/tests/create/chapterwise");
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Failed to create test",
-      );
+      setServerError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div>
-      <p className="text-sm text-gray-500 mb-6">
-        Test Creation <span className="mx-1">/</span> Create Test{" "}
-        <span className="mx-1">/</span>{" "}
-        <span className="text-gray-900">Chapter Wise</span>
-      </p>
+    <div className="w-full min-h-screen md:h-screen md:overflow-hidden bg-preproute-bg">
+      <div className="w-full h-full flex flex-col md:flex-row">
+        <div className="flex w-full md:w-[47.9167%] h-56 md:h-full min-w-0 items-center justify-center bg-preproute-bg py-6 md:py-0">
+          <img
+            src={illustration}
+            alt="Login illustration"
+            className="w-[85%] max-w-sm md:max-w-177.5 md:w-full h-auto object-contain"
+          />
+        </div>
 
-      <div className="inline-flex bg-gray-50 rounded-lg p-1 mb-8">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-5 py-2 rounded-md text-sm font-medium transition ${
-              activeTab === tab.key
-                ? "bg-white text-preproute-primary shadow-sm"
-                : "text-gray-400"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        <div className="w-full md:w-[52.0833%] flex-1 md:h-screen p-4 md:p-5 flex items-start md:items-center justify-center">
+          <div className="w-full md:h-full max-w-177.5 box-border bg-white border-[0.5px] border-login-form-border rounded-xl flex items-center justify-center px-5 md:px-6 lg:px-[clamp(40px,6.94vw,100px)] py-8 md:py-0">
+            <div className="w-full max-w-127.5 flex flex-col gap-5 md:gap-7.5">
+              <div className="w-full flex flex-col gap-5 md:gap-7.5">
+                <img
+                  src={logo}
+                  alt="Preproute"
+                  className="w-[134.745px] h-[33.039px] object-contain"
+                />
 
-      {dropdownError && (
-        <p className="text-red-500 text-sm mb-4">{dropdownError}</p>
-      )}
+                <div className="w-full flex flex-col gap-5 md:gap-7.5">
+                  <div className="w-full max-w-66 flex flex-col gap-5">
+                    <h1 className="m-0 text-xl font-semibold leading-[150%] text-text-gray">
+                      Login
+                    </h1>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Subject
-            </label>
-            <select
-              {...register("subject")}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-500 focus:outline-none focus:border-preproute-primary"
-            >
-              <option value="">Choose from Drop-down</option>
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            {errors.subject && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.subject.message}
-              </p>
-            )}
-          </div>
+                    <p className="m-0 w-full text-xs font-normal leading-[150%] text-text-gray">
+                      Use your company provided Login credentials
+                    </p>
+                  </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Name of Test
-            </label>
-            <input
-              {...register("name")}
-              placeholder="Enter name of Test"
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:border-preproute-primary"
-            />
-            {errors.name && (
-              <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
-            )}
-          </div>
+                  <form
+                    id="login-form"
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="w-full flex flex-col gap-5 md:gap-7.5"
+                  >
+                    <div className="w-full flex flex-col gap-3 md:gap-3.75">
+                      <label
+                        htmlFor="userId"
+                        className="text-base font-medium leading-[150%] text-text-gray"
+                      >
+                        User ID
+                      </label>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Topic
-            </label>
-            <select
-              {...register("topics")}
-              disabled={!selectedSubject || topicsLoading}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-500 focus:outline-none focus:border-preproute-primary disabled:bg-gray-50"
-            >
-              <option value="">
-                {topicsLoading ? "Loading..." : "Choose from Drop-down"}
-              </option>
-              {topics.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-            {errors.topics && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.topics.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Sub Topic
-            </label>
-            <select
-              {...register("sub_topics")}
-              disabled={!selectedTopic || subTopicsLoading}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-500 focus:outline-none focus:border-preproute-primary disabled:bg-gray-50"
-            >
-              <option value="">
-                {subTopicsLoading ? "Loading..." : "Choose from Drop-down"}
-              </option>
-              {subTopics.map((st) => (
-                <option key={st.id} value={st.id}>
-                  {st.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Duration (Minutes)
-            </label>
-            <input
-              {...register("total_time")}
-              placeholder="Enter the time"
-              inputMode="numeric"
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:border-preproute-primary"
-            />
-            {errors.total_time && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.total_time.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Test Difficulty Level
-            </label>
-            <Controller
-              control={control}
-              name="difficulty"
-              render={({ field }) => (
-                <div className="flex items-center gap-8 h-12">
-                  {(["easy", "medium", "difficult"] as const).map((level) => (
-                    <label
-                      key={level}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
                       <input
-                        type="radio"
-                        checked={field.value === level}
-                        onChange={() => field.onChange(level)}
-                        className="w-4 h-4 accent-preproute-primary"
+                        id="userId"
+                        autoComplete="username"
+                        {...register("userId")}
+                        placeholder="Enter User ID"
+                        className="box-border w-full h-12 px-4 rounded-lg border-[0.5px] border-input-border bg-white text-base font-medium leading-[150%] text-input-value placeholder:text-input-placeholder placeholder:font-medium outline-none focus:border-preproute-primary"
                       />
-                      <span className="text-gray-900 capitalize">{level}</span>
-                    </label>
-                  ))}
+
+                      {errors.userId && (
+                        <p className="text-xs text-red-500">
+                          {errors.userId.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="w-full flex flex-col gap-3 md:gap-3.75">
+                      <div className="w-full flex flex-col gap-3 md:gap-3.75">
+                        <label
+                          htmlFor="password"
+                          className="text-base font-medium leading-[150%] text-text-gray"
+                        >
+                          Password
+                        </label>
+
+                        <input
+                          id="password"
+                          autoComplete="current-password"
+                          type="password"
+                          {...register("password")}
+                          placeholder="Enter Password"
+                          className="box-border w-full h-12 px-4 rounded-lg border-[0.5px] border-input-border bg-white text-base font-medium leading-[150%] text-input-value placeholder:text-input-placeholder placeholder:font-medium outline-none focus:border-preproute-primary"
+                        />
+                      </div>
+
+                      {errors.password && (
+                        <p className="text-xs text-red-500">
+                          {errors.password.message}
+                        </p>
+                      )}
+                      <a
+                        href="#"
+                        className="w-fit text-sm font-normal leading-[150%] text-primary-brand pt-3.75"
+                      >
+                        Forgot password?
+                      </a>
+                    </div>
+
+                    {serverError && (
+                      <p className="text-sm text-red-500">{serverError}</p>
+                    )}
+                  </form>
                 </div>
-              )}
-            />
-          </div>
-        </div>
+              </div>
 
-        <div className="mt-8">
-          <p className="font-medium text-gray-900 mb-4">Marking Scheme:</p>
-          <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Wrong Answer
-                </label>
-                <NumberStepper value={wrongMarks} onChange={setWrongMarks} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Unattempted
-                </label>
-                <NumberStepper
-                  value={unattemptMarks}
-                  onChange={setUnattemptMarks}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Correct Answer
-                </label>
-                <NumberStepper
-                  value={correctMarks}
-                  onChange={setCorrectMarks}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  No of Questions
-                </label>
-                <input
-                  {...register("total_questions")}
-                  placeholder="Ex: 250"
-                  inputMode="numeric"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:border-preproute-primary"
-                />
-                {errors.total_questions && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.total_questions.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Total Marks
-                </label>
-                <input
-                  value={totalMarks}
-                  readOnly
-                  disabled
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 placeholder-gray-400 bg-gray-50 text-gray-400"
-                />
-              </div>
+              {/* The button sits outside the form to match the design spacing, so it targets the form by id. */}
+              <button
+                type="submit"
+                form="login-form"
+                disabled={isSubmitting}
+                className="w-full h-12 shrink-0 rounded-xl bg-preproute-primary text-base font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              >
+                {isSubmitting ? "Logging in..." : "Login"}
+              </button>
             </div>
           </div>
         </div>
-
-        <div className="flex justify-end items-center gap-4 mt-10">
-          {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard")}
-            className="px-8 py-3 rounded-lg bg-indigo-50 text-preproute-primary font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-8 py-3 rounded-lg bg-preproute-primary text-white font-medium disabled:opacity-50"
-          >
-            {isSubmitting ? "Saving..." : "Next"}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

@@ -12,7 +12,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
-            <Route path="/tests/create" element={<TestFormPage />} />
+            <Route path="/tests/create/:type" element={<TestFormPage />} />
           </Route>
         </Route>
 
