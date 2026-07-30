@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { UseFormSetValue } from "react-hook-form";
 import {
   getSubjects,
@@ -26,30 +26,47 @@ export function useTestFormCascade<T extends CascadeFormValues>(
   const [subTopicsLoading, setSubTopicsLoading] = useState(false);
   const [dropdownError, setDropdownError] = useState<string | null>(null);
 
+  // "Previous" trackers used only to detect a change during render.
+  // Plain state is correct here because we read + conditionally set it
+  // during render (React explicitly sanctions this pattern).
   const [prevSubject, setPrevSubject] = useState(selectedSubject);
   const [prevTopic, setPrevTopic] = useState(selectedTopic);
 
-  // Reset topics and sub-topics when subject changes
+  const subjectChanged = selectedSubject !== prevSubject;
+  const topicChanged = selectedTopic !== prevTopic;
+
+  if (subjectChanged) {
+    setPrevSubject(selectedSubject);
+    setTopics([]);
+    setSubTopics([]);
+  }
+  if (topicChanged) {
+    setPrevTopic(selectedTopic);
+    setSubTopics([]);
+  }
+
+  // "Have we run yet" flags, read/written only inside effects — a ref
+  // is the right tool here, since we never need them during render.
+  const isFirstSubjectSync = useRef(true);
   useEffect(() => {
-    if (selectedSubject !== prevSubject) {
-      setPrevSubject(selectedSubject);
-      setTopics([]);
-      setSubTopics([]);
-
-      setValue("topics" as never, "" as never);
-      setValue("sub_topics" as never, "" as never);
+    if (isFirstSubjectSync.current) {
+      isFirstSubjectSync.current = false;
+      return;
     }
-  }, [selectedSubject, prevSubject, setValue]);
+    setValue("topics" as never, "" as never);
+    setValue("sub_topics" as never, "" as never);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSubject, setValue]);
 
-  // Reset sub-topics when topic changes
+  const isFirstTopicSync = useRef(true);
   useEffect(() => {
-    if (selectedTopic !== prevTopic) {
-      setPrevTopic(selectedTopic);
-      setSubTopics([]);
-
-      setValue("sub_topics" as never, "" as never);
+    if (isFirstTopicSync.current) {
+      isFirstTopicSync.current = false;
+      return;
     }
-  }, [selectedTopic, prevTopic, setValue]);
+    setValue("sub_topics" as never, "" as never);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTopic, setValue]);
 
   useEffect(() => {
     getSubjects()
@@ -58,33 +75,20 @@ export function useTestFormCascade<T extends CascadeFormValues>(
   }, []);
 
   useEffect(() => {
-    if (!selectedSubject) {
-      setTopics([]);
-      return;
-    }
+    if (!selectedSubject) return;
 
     let cancelled = false;
-
     const loadTopics = async () => {
       setTopicsLoading(true);
-
       try {
         const res = await getTopicsBySubject(selectedSubject);
-
-        if (!cancelled) {
-          setTopics(res.data);
-        }
+        if (!cancelled) setTopics(res.data);
       } catch {
-        if (!cancelled) {
-          setDropdownError("Failed to load topics");
-        }
+        if (!cancelled) setDropdownError("Failed to load topics");
       } finally {
-        if (!cancelled) {
-          setTopicsLoading(false);
-        }
+        if (!cancelled) setTopicsLoading(false);
       }
     };
-
     loadTopics();
 
     return () => {
@@ -93,33 +97,20 @@ export function useTestFormCascade<T extends CascadeFormValues>(
   }, [selectedSubject]);
 
   useEffect(() => {
-    if (!selectedTopic) {
-      setSubTopics([]);
-      return;
-    }
+    if (!selectedTopic) return;
 
     let cancelled = false;
-
     const loadSubTopics = async () => {
       setSubTopicsLoading(true);
-
       try {
         const res = await getSubTopicsByTopic(selectedTopic);
-
-        if (!cancelled) {
-          setSubTopics(res.data);
-        }
+        if (!cancelled) setSubTopics(res.data);
       } catch {
-        if (!cancelled) {
-          setDropdownError("Failed to load sub-topics");
-        }
+        if (!cancelled) setDropdownError("Failed to load sub-topics");
       } finally {
-        if (!cancelled) {
-          setSubTopicsLoading(false);
-        }
+        if (!cancelled) setSubTopicsLoading(false);
       }
     };
-
     loadSubTopics();
 
     return () => {

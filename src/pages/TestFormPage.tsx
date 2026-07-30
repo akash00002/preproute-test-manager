@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useEffect, useState } from "react";
-import { useNavigate, Link, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -90,7 +90,7 @@ export default function TestFormPage() {
 
   const selectedSubject = watch("subject");
   const selectedTopic = watch("topics");
-  const selectedSubTopic = watch("sub_topics");
+  // const selectedSubTopic = watch("sub_topics");
   const totalQuestions = watch("total_questions");
 
   const {

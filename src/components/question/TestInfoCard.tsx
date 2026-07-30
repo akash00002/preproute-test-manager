@@ -5,7 +5,7 @@ import timer from "../../assets/timer.svg";
 import quiz from "../../assets/quiz.svg";
 import leaderboard from "../../assets/leaderboard.svg";
 
-type Difficulty = "easy" | "medium" | "hard";
+export type Difficulty = "easy" | "medium" | "hard";
 
 const difficultyLabels: Record<Difficulty, string> = {
   easy: "Easy",

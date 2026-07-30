@@ -80,6 +80,7 @@ export interface CreateTestPayload {
   total_time: number;
   total_marks: number;
   total_questions: number;
+  questions?: string[];
   status: TestStatus;
 }
 

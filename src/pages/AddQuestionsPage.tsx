@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTestDraftStore } from "../store/testDraftStore";
 import { useQuestionDraftStore } from "../store/questionDraftStore";
-import TestInfoCard from "../components/question/TestInfoCard";
+import TestInfoCard, {
+  type Difficulty,
+} from "../components/question/TestInfoCard";
 import QuestionEditor from "../components/question/QuestionEditor";
 import OptionsEditor from "../components/question/OptionsEditor";
 import SolutionEditor from "../components/question/SolutionEditor";
@@ -28,6 +30,18 @@ const breadcrumbLabels: Record<string, string> = {
   pyq: "PYQ",
   mock: "Mock Test",
 };
+
+const DIFFICULTIES = [
+  "easy",
+  "medium",
+  "hard",
+] as const satisfies readonly Difficulty[];
+
+function toDifficulty(value: string | undefined): Difficulty | undefined {
+  return (DIFFICULTIES as readonly string[]).includes(value ?? "")
+    ? (value as Difficulty)
+    : undefined;
+}
 
 // Maps an in-progress question draft to the API's bulk-create shape.
 // Returns null if the draft isn't actually filled in (e.g. an unused
@@ -279,7 +293,7 @@ export default function AddQuestionsPage() {
           totalTime={testData?.total_time}
           totalMarks={testData?.total_marks}
           questionCount={questions.length}
-          difficulty={testData?.difficulty}
+          difficulty={toDifficulty(testData?.difficulty)}
           onEdit={() => setIsEditModalOpen(true)}
         />
 
