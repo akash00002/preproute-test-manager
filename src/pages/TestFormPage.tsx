@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useEffect, useState } from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";

@@ -1,4 +1,4 @@
-// components/test/TestTypeTabs.tsx
+/* eslint-disable react-refresh/only-export-components */
 export type TestTab = "chapterwise" | "pyq" | "mock";
 
 export const testTabs: { key: TestTab; label: string }[] = [
