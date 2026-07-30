@@ -283,14 +283,14 @@ export default function TestFormPage() {
                   resetQuestions();
                   navigate("/dashboard");
                 }}
-                className="w-40 h-12 rounded-pill bg-brand-semiWhite text-sidebar-active font-medium text-base"
+                className="w-40 h-12 rounded-pill bg-brand-semiWhite text-sidebar-active font-medium text-base hover:cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-40 h-12 rounded-pill bg-preproute-next text-[#FAFAFA] font-medium text-base disabled:opacity-50"
+                className="w-40 h-12 rounded-pill bg-preproute-next text-[#FAFAFA] hover:cursor-pointer font-medium text-base disabled:opacity-50"
               >
                 {isSubmitting ? "Saving..." : "Next"}
               </button>

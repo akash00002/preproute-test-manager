@@ -58,7 +58,7 @@ export default function Breadcrumb({
         <button
           type="button"
           onClick={onActionClick}
-          className="w-50 h-12 rounded-pill bg-preproute-next text-white font-medium text-base hover:opacity-90 transition-opacity shrink-0"
+          className="w-50 h-12 rounded-pill bg-preproute-next text-white font-medium text-base hover:opacity-90 transition-opacity shrink-0 hover:cursor-pointer"
         >
           {actionLabel}
         </button>

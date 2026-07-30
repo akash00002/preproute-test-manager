@@ -94,6 +94,7 @@ export interface Question {
   correct_option: "option1" | "option2" | "option3" | "option4";
   explanation?: string;
   difficulty?: string;
+  subject: string;
   topic?: string;
   sub_topic?: string;
   media_url?: string;

@@ -35,9 +35,11 @@ export const useMetadataStore = create<MetadataState>()(
       },
 
       fetchTopics: async (subjectId) => {
-        if (get().topicsBySubject[subjectId]) return;
+        // if (get().topicsBySubject[subjectId]) return;
 
         const res = await getTopicsBySubject(subjectId);
+
+        console.log("Topics API response:", res.data);
 
         set((state) => ({
           topicsBySubject: {

@@ -19,6 +19,7 @@ export function useResolvedTestNames(
   }, [fetchSubjects]);
 
   useEffect(() => {
+    console.log("fetchTopics effect", subjectId);
     if (subjectId) fetchTopics(subjectId);
   }, [subjectId, fetchTopics]);
 

@@ -1,4 +1,3 @@
-import { Pencil, Clock, ListChecks, BarChart3 } from "lucide-react";
 import arSticker from "../../assets/ar-sticker.svg";
 import cognition from "../../assets/cognition.svg";
 import pencil from "../../assets/pencil.svg";

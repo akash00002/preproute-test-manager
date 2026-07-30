@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
 import { useTestDraftStore } from "../store/testDraftStore";
 import { useQuestionDraftStore } from "../store/questionDraftStore";
 import TestInfoCard from "../components/question/TestInfoCard";
@@ -14,15 +13,61 @@ import EditTestModal from "../components/EditTestModal";
 import Breadcrumb from "../components/Breadcrumb";
 import PublishTestView from "../components/question/PublishTestView";
 import type { PublishSettings } from "../components/question/PublishTestView";
+import { createQuestionsBulk } from "../api/questions";
+import { updateTest } from "../api/tests";
+import type { CreateQuestionPayload } from "../types/api";
+import type { QuestionDraft } from "../types/question";
 import add from "../assets/add.svg";
 import download from "../assets/download.svg";
 import deleteIcon from "../assets/delete-icon.svg";
+import tick from "../assets/tick.svg";
 
 const breadcrumbLabels: Record<string, string> = {
   chapterwise: "Chapter Wise",
   pyq: "PYQ",
   mock: "Mock Test",
 };
+
+// Maps an in-progress question draft to the API's bulk-create shape.
+// Returns null if the draft isn't actually filled in (e.g. an unused
+// pre-allocated slot), so callers can filter those out.
+function toCreateQuestionPayload(
+  draft: QuestionDraft,
+  testId: string,
+  subjectId: string,
+  topicNameById: Map<string, string>,
+  subTopicNameById: Map<string, string>,
+): CreateQuestionPayload | null {
+  if (!draft.text.trim()) return null;
+  if (draft.correctOptionIndex === null) return null;
+
+  const optionKeys = ["option1", "option2", "option3", "option4"] as const;
+  const correctOption = optionKeys[draft.correctOptionIndex];
+  if (!correctOption) return null;
+
+  // The backend's /questions/bulk expects topic/sub_topic as NAME strings,
+  // not IDs — unlike Test.topics (which is IDs). Convert here.
+  const topic = draft.topic ? topicNameById.get(draft.topic) : undefined;
+  const subTopic = draft.subTopic
+    ? subTopicNameById.get(draft.subTopic)
+    : undefined;
+
+  return {
+    type: "mcq",
+    question: draft.text,
+    option1: draft.options[0] ?? "",
+    option2: draft.options[1] ?? "",
+    option3: draft.options[2] ?? "",
+    option4: draft.options[3] ?? "",
+    correct_option: correctOption,
+    explanation: draft.solution || undefined,
+    difficulty: draft.difficulty || undefined,
+    subject: subjectId,
+    topic,
+    sub_topic: subTopic,
+    test_id: testId,
+  };
+}
 
 export default function AddQuestionsPage() {
   const navigate = useNavigate();
@@ -32,6 +77,8 @@ export default function AddQuestionsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
   const [isPublishView, setIsPublishView] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const {
     subjectName,
@@ -90,18 +137,86 @@ export default function AddQuestionsPage() {
   };
 
   const handlePublish = () => {
+    setPublishError(null);
     setIsPublishView(true);
   };
 
   const handlePublishCancel = () => {
+    if (isPublishing) return;
+    setPublishError(null);
     setIsPublishView(false);
   };
 
-  const handlePublishConfirm = (settings: PublishSettings) => {
-    // TODO: wire to actual publish/save API call, passing `settings`
-    // (mode, liveUntil, customEndDate, customEndTime) along with testId.
-    setIsPublishView(false);
-    // e.g. navigate("/test-creation") once the API call succeeds
+  const handlePublishConfirm = async (settings: PublishSettings) => {
+    setPublishError(null);
+
+    if (!testData.subject) {
+      setPublishError(
+        "This test is missing a subject — go back and set it before publishing.",
+      );
+      return;
+    }
+
+    const validTopicIds = new Map(resolvedTopics.map((t) => [t.id, t.name]));
+    const validSubTopicIds = new Map(
+      resolvedSubTopics.map((st) => [st.id, st.name]),
+    );
+
+    const payloads = questions
+      .map((q) =>
+        toCreateQuestionPayload(
+          q,
+          testId,
+          testData.subject!,
+          validTopicIds,
+          validSubTopicIds,
+        ),
+      )
+      .filter((p): p is CreateQuestionPayload => p !== null);
+    // ...rest unchanged
+
+    if (payloads.length === 0) {
+      setPublishError(
+        "Add at least one complete question (with an answer selected) before publishing.",
+      );
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      console.table(
+        payloads.map((p) => ({
+          question: p.question.slice(0, 20),
+          topic: p.topic,
+          sub_topic: p.sub_topic,
+          subject: p.subject,
+        })),
+      );
+
+      const bulkRes = await createQuestionsBulk(payloads);
+      const createdIds = bulkRes.data.map((q) => q.id);
+
+      // NOTE: scheduling fields (scheduleDate/scheduleTime, liveUntil,
+      // custom end date/time) from `settings` aren't in CreateTestPayload
+      // per the API doc, so they aren't sent here. If the backend does
+      // accept them, extend CreateTestPayload and pass them through below.
+
+      await updateTest(testId, {
+        questions: createdIds,
+        total_questions: createdIds.length,
+        status: settings.mode === "schedule" ? "scheduled" : "live",
+      });
+
+      resetTestDraft();
+      resetQuestions();
+      navigate("/test-creation", { replace: true });
+    } catch (err) {
+      setPublishError(
+        err instanceof Error ? err.message : "Failed to publish test.",
+      );
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const handleExitConfirm = () => {
@@ -117,32 +232,41 @@ export default function AddQuestionsPage() {
   return (
     <div className="flex-1 min-w-0">
       {/* Breadcrumb + Publish — persists in both editor and publish views */}
-      <Breadcrumb
-        items={[
-          { label: "Test Creation", to: "/test-creation" },
-          { label: "Create Test", to: "/test-creation/create-test" },
-          { label: typeLabel },
-        ]}
-        showActionButton={!isPublishView}
-        showBottomBorder
-        actionLabel="Publish"
-        onActionClick={handlePublish}
-      />
-
+      {!isPublishView && (
+        <Breadcrumb
+          items={[
+            { label: "Test Creation", to: "/test-creation" },
+            { label: "Create Test", to: "/test-creation/create-test" },
+            { label: typeLabel },
+          ]}
+          showActionButton={!isPublishView}
+          showBottomBorder
+          actionLabel="Publish"
+          onActionClick={handlePublish}
+        />
+      )}
       <div className="p-5 flex flex-col gap-5">
         {isPublishView && (
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-lg font-semibold text-text-gray">
-              Test created
-            </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-600">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white">
-                <Check className="w-3 h-3" />
+          <div className="flex flex-col gap-3">
+            <p className="text-base font-normal text-black opacity-60 pb-2.5">
+              Test Creation
+            </p>
+
+            <div className="flex items-center pt-5 gap-5">
+              <h1 className="text-base font-bold text-text-gray">
+                Test Created
+              </h1>
+
+              <span className="inline-flex  h-8 items-center justify-center gap-2.5 rounded-lg border-[0.5px] border-success px-2.5 text-xs font-normal text-emerald-600">
+                <span className="flex h-4 w-4 items-center justify-center">
+                  <img src={tick} alt="" className="w-4 h-4" />
+                </span>
+
+                {allDone
+                  ? `All ${questions.length} Questions done`
+                  : `${completedCount}/${questions.length} Questions done`}
               </span>
-              {allDone
-                ? `All ${questions.length} Questions done`
-                : `${completedCount}/${questions.length} Questions done`}
-            </span>
+            </div>
           </div>
         )}
 
@@ -163,10 +287,18 @@ export default function AddQuestionsPage() {
         )}
 
         {isPublishView ? (
-          <PublishTestView
-            onCancel={handlePublishCancel}
-            onConfirm={handlePublishConfirm}
-          />
+          <div className="flex flex-col gap-3">
+            {publishError && (
+              <p className="text-sm font-medium text-error-300">
+                {publishError}
+              </p>
+            )}
+            <PublishTestView
+              onCancel={handlePublishCancel}
+              onConfirm={handlePublishConfirm}
+              isSubmitting={isPublishing}
+            />
+          </div>
         ) : (
           <>
             {/* Question header */}
@@ -191,7 +323,7 @@ export default function AddQuestionsPage() {
             <div className="flex flex-col pr- gap-7.5">
               <button
                 onClick={handleDeleteAllEdits}
-                className="w-33.5 h-8 flex items-center bg-error-50 rounded-lg px-1.25 gap-0.5 text-sm font-medium text-error-300 hover:opacity-80 -mt-4"
+                className="w-33.5 h-8 flex items-center bg-error-50 rounded-lg px-1.25 gap-0.5 text-sm font-medium text-error-300 hover:opacity-80 -mt-4 hover:cursor-pointer"
               >
                 <img src={deleteIcon} alt="" className="w-5 h-5" /> Delete All
                 Edits
@@ -240,15 +372,23 @@ export default function AddQuestionsPage() {
               <div className="flex justify-between items-center gap-4 flex-wrap pb-8">
                 <button
                   onClick={() => setIsExitConfirmOpen(true)}
-                  className="w-full sm:w-45 h-12 rounded-lg bg-error-300 text-gray-50 font-medium text-base"
+                  className="w-full sm:w-45 h-12 rounded-lg bg-error-300 text-gray-50 font-medium text-base hover:cursor-pointer"
                 >
                   Exit Test Creation
                 </button>
                 <button
-                  onClick={goNext}
-                  className="w-full sm:w-40 h-12 rounded-lg bg-preproute-next text-gray-50 font-medium text-base"
+                  onClick={
+                    currentIndex === questions.length - 1
+                      ? handlePublish
+                      : goNext
+                  }
+                  className={`w-full sm:w-40 h-12 rounded-lg text-gray-50 font-medium hover:cursor-pointer text-base ${
+                    currentIndex === questions.length - 1
+                      ? "bg-preproute-primary"
+                      : "bg-preproute-next"
+                  }`}
                 >
-                  Next
+                  {currentIndex === questions.length - 1 ? "Publish" : "Next"}
                 </button>
               </div>
             </div>

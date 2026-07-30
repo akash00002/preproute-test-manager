@@ -25,24 +25,30 @@ export function useTestFormCascade<T extends CascadeFormValues>(
   const [subTopicsLoading, setSubTopicsLoading] = useState(false);
   const [dropdownError, setDropdownError] = useState<string | null>(null);
 
-  // Track the previous subject/topic so downstream selections can be reset
-  // during render when the upstream value changes, instead of in an Effect.
   const [prevSubject, setPrevSubject] = useState(selectedSubject);
   const [prevTopic, setPrevTopic] = useState(selectedTopic);
 
-  if (selectedSubject !== prevSubject) {
-    setPrevSubject(selectedSubject);
-    setTopics([]);
-    setSubTopics([]);
-    setValue("topics" as never, "" as never);
-    setValue("sub_topics" as never, "" as never);
-  }
+  // Reset topics and sub-topics when subject changes
+  useEffect(() => {
+    if (selectedSubject !== prevSubject) {
+      setPrevSubject(selectedSubject);
+      setTopics([]);
+      setSubTopics([]);
 
-  if (selectedTopic !== prevTopic) {
-    setPrevTopic(selectedTopic);
-    setSubTopics([]);
-    setValue("sub_topics" as never, "" as never);
-  }
+      setValue("topics" as never, "" as never);
+      setValue("sub_topics" as never, "" as never);
+    }
+  }, [selectedSubject, prevSubject, setValue]);
+
+  // Reset sub-topics when topic changes
+  useEffect(() => {
+    if (selectedTopic !== prevTopic) {
+      setPrevTopic(selectedTopic);
+      setSubTopics([]);
+
+      setValue("sub_topics" as never, "" as never);
+    }
+  }, [selectedTopic, prevTopic, setValue]);
 
   useEffect(() => {
     getSubjects()
@@ -51,7 +57,10 @@ export function useTestFormCascade<T extends CascadeFormValues>(
   }, []);
 
   useEffect(() => {
-    if (!selectedSubject) return;
+    if (!selectedSubject) {
+      setTopics([]);
+      return;
+    }
 
     let cancelled = false;
 
@@ -83,7 +92,10 @@ export function useTestFormCascade<T extends CascadeFormValues>(
   }, [selectedSubject]);
 
   useEffect(() => {
-    if (!selectedTopic) return;
+    if (!selectedTopic) {
+      setSubTopics([]);
+      return;
+    }
 
     let cancelled = false;
 
