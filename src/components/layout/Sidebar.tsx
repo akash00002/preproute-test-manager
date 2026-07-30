@@ -1,11 +1,11 @@
 import { NavLink, useLocation } from "react-router-dom";
-import logo from "../assets/preproute-logo.svg";
-import closeIcon from "../assets/close.svg"; // swap for whatever close icon asset you have
+import logo from "../../assets/preproute-logo.svg";
+import closeIcon from "../../assets/close.svg"; // swap for whatever close icon asset you have
 
-import dashboardIcon from "../assets/dash-icon.svg";
-import createTestIcon from "../assets/create-test.svg";
-import trackTest from "../assets/track-test.svg";
-import { useUIStore } from "../store/uiStore";
+import dashboardIcon from "../../assets/dash-icon.svg";
+import createTestIcon from "../../assets/create-test.svg";
+import trackTest from "../../assets/track-test.svg";
+import { useUIStore } from "../../store/uiStore";
 
 const navItems = [
   {

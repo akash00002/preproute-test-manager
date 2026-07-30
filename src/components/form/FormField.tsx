@@ -8,7 +8,7 @@ interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
 const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
   ({ label, error, className, ...inputProps }, ref) => {
     return (
-      <div className="flex w-full flex-col 3.75">
+      <div className="flex w-full flex-col gap-3.75">
         <label className="text-base font-medium text-text-gray leading-[150%]">
           {label}
         </label>

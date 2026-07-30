@@ -1,4 +1,4 @@
-import chevronIcon from "../assets/chevron-icon.svg";
+import chevronIcon from "../../assets/chevron-icon.svg";
 
 interface NumberStepperProps {
   value: number;

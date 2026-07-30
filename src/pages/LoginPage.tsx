@@ -7,6 +7,7 @@ import { login } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
 import logo from "../assets/preproute-logo.svg";
 import illustration from "../assets/login-illustration.svg";
+import { useTestDraftStore } from "../store/testDraftStore";
 
 const loginSchema = z.object({
   userId: z.string().min(1, "User ID is required"),
@@ -36,9 +37,18 @@ export default function LoginPage() {
 
     try {
       const response = await login(values.userId, values.password);
-      // Persist auth before routing so protected pages can render on the first pass.
+
+      // Save auth
       setAuth(response.data.token, response.data.user);
-      navigate("/tests/create/chapterwise");
+
+      // Check for an existing draft
+      const { testId } = useTestDraftStore.getState();
+
+      if (testId) {
+        navigate("/tests/add-questions", { replace: true });
+      } else {
+        navigate("/tests/create/chapterwise", { replace: true });
+      }
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Login failed");
     } finally {

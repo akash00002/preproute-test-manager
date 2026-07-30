@@ -41,7 +41,12 @@ export interface SubTopic {
 }
 
 // New tests are created without a status until the question flow is complete.
-export type TestStatus = "draft" | "live" | null;
+export type TestStatus =
+  | "draft"
+  | "live"
+  | "unpublished"
+  | "scheduled"
+  | "expired";
 
 export interface Test {
   id: string;

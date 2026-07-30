@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { CreateTestPayload, Question } from "../types/api";
 
 interface TestDraftState {
@@ -12,17 +13,45 @@ interface TestDraftState {
   reset: () => void;
 }
 
-export const useTestDraftStore = create<TestDraftState>((set) => ({
-  testId: null,
-  testData: {},
-  questions: [],
-  setTestData: (data) =>
-    set((state) => ({ testData: { ...state.testData, ...data } })),
-  setTestId: (id) => set({ testId: id }),
-  addQuestion: (q) => set((state) => ({ questions: [...state.questions, q] })),
-  removeQuestion: (index) =>
-    set((state) => ({
-      questions: state.questions.filter((_, i) => i !== index),
-    })),
-  reset: () => set({ testId: null, testData: {}, questions: [] }),
-}));
+export const useTestDraftStore = create<TestDraftState>()(
+  persist(
+    (set) => ({
+      testId: null,
+      testData: {},
+      questions: [],
+
+      setTestData: (data) =>
+        set((state) => ({
+          testData: {
+            ...state.testData,
+            ...data,
+          },
+        })),
+
+      setTestId: (id) =>
+        set({
+          testId: id,
+        }),
+
+      addQuestion: (q) =>
+        set((state) => ({
+          questions: [...state.questions, q],
+        })),
+
+      removeQuestion: (index) =>
+        set((state) => ({
+          questions: state.questions.filter((_, i) => i !== index),
+        })),
+
+      reset: () =>
+        set({
+          testId: null,
+          testData: {},
+          questions: [],
+        }),
+    }),
+    {
+      name: "test-draft-storage",
+    },
+  ),
+);

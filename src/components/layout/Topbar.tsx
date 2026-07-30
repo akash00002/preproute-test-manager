@@ -1,9 +1,9 @@
-import { useAuthStore } from "../store/authStore";
-import { useUIStore } from "../store/uiStore";
-import notificationIcon from "../assets/notification.svg";
-import avatar from "../assets/avatar.png";
-import downArrow from "../assets/arrow-drop-down.svg";
-import hamburgerIcon from "../assets/hamburger.svg"; // swap for your actual asset name
+import { useAuthStore } from "../../store/authStore";
+import { useUIStore } from "../../store/uiStore";
+import notificationIcon from "../../assets/notification.svg";
+import avatar from "../../assets/avatar.png";
+import downArrow from "../../assets/arrow-drop-down.svg";
+import hamburgerIcon from "../../assets/hamburger.svg"; // swap for your actual asset name
 
 export default function Topbar() {
   const user = useAuthStore((state) => state.user);

@@ -24,7 +24,15 @@
   --color-input-border: #9ca3af;
   --color-primary-brand: #1b5def;
 
-  --color-text-color: #111827;
+  --color-brand-light: #97bcf0;
+
+  --color-gray-50: #fafafa;
+
+  --color-text-subtle: #6b7280;
+
+  --color-gray-900: #111827;
+  --color-primary-dark: #000a3a;
+  --color-primary-hover: #07013c;
 
   --color-brand-semiWhite: #f8faff;
 
@@ -32,10 +40,17 @@
   --color-border-medium: #d1d5db;
 
   --color-success: #0c9d61;
+  --color-success-50: #f2faf6;
 
   --color-sidebar-text: #6b7180;
   --color-sidebar-active-bg: #f5f7ff;
   --color-sidebar-active: #384ec7;
+
+  --color-accent-hover: #e9b406;
+  --color-accent-primary: #ffc82c;
+
+  --color-error-50: #fffbfb;
+  --color-error-300: #ff7f7f;
 
   /* --- added for Test Creation form --- */
   --color-preproute-next: #7489ff; /* "Next" button bg on Test Creation form */

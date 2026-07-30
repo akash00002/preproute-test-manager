@@ -22,13 +22,23 @@ client.interceptors.response.use(
     // API helpers expect the backend envelope, not the full Axios response.
     return response.data;
   },
-  (error: AxiosError<{ status: string; message: string }>) => {
+  (
+    error: AxiosError<{
+      status: string;
+      message: string;
+      errors?: { msg: string }[];
+    }>,
+  ) => {
     if (error.response?.status === 401) {
-      // Clear auth once the server says this session is no longer valid.
       useAuthStore.getState().logout();
     }
+
     const message =
-      error.response?.data?.message || error.message || "Something went wrong";
+      error.response?.data?.errors?.[0]?.msg ||
+      error.response?.data?.message ||
+      error.message ||
+      "Something went wrong";
+
     return Promise.reject(new Error(message));
   },
 );

@@ -1,11 +1,17 @@
-type Difficulty = "easy" | "medium" | "difficult";
+type Difficulty = "easy" | "medium" | "hard";
 
 interface DifficultySelectorProps {
   value: Difficulty;
   onChange: (value: Difficulty) => void;
 }
 
-const levels: Difficulty[] = ["easy", "medium", "difficult"];
+const levels: Difficulty[] = ["easy", "medium", "hard"];
+
+const levelLabels: Record<Difficulty, string> = {
+  easy: "Easy",
+  medium: "Medium",
+  hard: "Difficult",
+};
 
 export default function DifficultySelector({
   value,
@@ -30,8 +36,8 @@ export default function DifficultySelector({
               className="h-5 w-5 accent-preproute-next"
             />
 
-            <span className="text-base font-medium capitalize text-text-gray">
-              {level}
+            <span className="text-base font-medium text-text-gray">
+              {levelLabels[level]}
             </span>
           </label>
         ))}

@@ -3,15 +3,20 @@ import { useNavigate, Link, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { createTest } from "../api/tests";
+import { createTest, updateTest } from "../api/tests";
 import { useTestDraftStore } from "../store/testDraftStore";
 import { useTestFormCascade } from "../hooks/UseTestFormCascade";
-import FormField from "../components/FormField";
-import FormSelect from "../components/FormSelect";
-import DifficultySelector from "../components/DifficultySelector";
-import MarkingSchemeSection from "../components/MarkingSchemeSection";
-
-type TestTab = "chapterwise" | "pyq" | "mock";
+import FormField from "../components/form/FormField";
+import FormSelect from "../components/form/FormSelect";
+import DifficultySelector from "../components/form/DifficultySelector";
+import MarkingSchemeSection from "../components/form/MarkingSchemeSection";
+import TestTypeTabs, {
+  isValidTestTab,
+  type TestTab,
+} from "../components/form/TestTypeTabs";
+import type { CreateTestPayload } from "../types/api";
+import Breadcrumb from "../components/Breadcrumb";
+import { useQuestionDraftStore } from "../store/questionDraftStore";
 
 const testSchema = z.object({
   name: z.string().min(1, "Test name is required"),
@@ -19,18 +24,12 @@ const testSchema = z.object({
   topics: z.string().min(1, "Topic is required"),
   sub_topics: z.string().optional(),
   total_time: z.coerce.number().min(1, "Duration is required"),
-  difficulty: z.enum(["easy", "medium", "difficult"]),
+  difficulty: z.enum(["easy", "medium", "hard"]),
   total_questions: z.coerce.number().min(1, "Number of questions is required"),
 });
 
 type TestFormInput = z.input<typeof testSchema>;
 type TestFormOutput = z.output<typeof testSchema>;
-
-const tabs: { key: TestTab; label: string }[] = [
-  { key: "chapterwise", label: "Chapterwise" },
-  { key: "pyq", label: "PYQ" },
-  { key: "mock", label: "Mock Test" },
-];
 
 const breadcrumbLabels: Record<TestTab, string> = {
   chapterwise: "Chapter Wise",
@@ -38,24 +37,29 @@ const breadcrumbLabels: Record<TestTab, string> = {
   mock: "Mock Test",
 };
 
-const isValidTab = (value: string | undefined): value is TestTab =>
-  tabs.some((tab) => tab.key === value);
-
 export default function TestFormPage() {
   const navigate = useNavigate();
+  const testId = useTestDraftStore((state) => state.testId);
+  const testData = useTestDraftStore((state) => state.testData);
   const setTestData = useTestDraftStore((state) => state.setTestData);
   const setTestId = useTestDraftStore((state) => state.setTestId);
+  const resetTestDraft = useTestDraftStore((state) => state.reset);
+  const resetQuestions = useQuestionDraftStore((state) => state.resetQuestions);
 
   const { type } = useParams<{ type: string }>();
-  const activeTab: TestTab = isValidTab(type) ? type : "chapterwise";
+  const activeTab: TestTab = isValidTestTab(type) ? type : "chapterwise";
 
-  const [wrongMarks, setWrongMarks] = useState(-1);
-  const [unattemptMarks, setUnattemptMarks] = useState(0);
-  const [correctMarks, setCorrectMarks] = useState(5);
+  // Seed marking scheme from the existing draft when editing, otherwise
+  // fall back to the original defaults for a brand-new test.
+  const [wrongMarks, setWrongMarks] = useState(testData.wrong_marks ?? -1);
+  const [unattemptMarks, setUnattemptMarks] = useState(
+    testData.unattempt_marks ?? 0,
+  );
+  const [correctMarks, setCorrectMarks] = useState(testData.correct_marks ?? 5);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isValidTab(type)) {
+    if (!isValidTestTab(type)) {
       navigate("/tests/create/chapterwise", { replace: true });
     }
   }, [type, navigate]);
@@ -69,7 +73,18 @@ export default function TestFormPage() {
     formState: { errors, isSubmitting },
   } = useForm<TestFormInput, unknown, TestFormOutput>({
     resolver: zodResolver(testSchema),
-    defaultValues: { difficulty: "easy" },
+    // Pre-fill from the draft when returning to edit an existing test;
+    // testData is {} for a brand-new test, so these all fall back cleanly.
+    defaultValues: {
+      name: testData.name ?? "",
+      subject: testData.subject ?? "",
+      topics: testData.topics?.[0] ?? "",
+      sub_topics: testData.sub_topics?.[0] ?? "",
+      total_time: testData.total_time,
+      difficulty:
+        (testData.difficulty as TestFormInput["difficulty"]) ?? "easy",
+      total_questions: testData.total_questions,
+    },
   });
 
   const selectedSubject = watch("subject");
@@ -94,7 +109,7 @@ export default function TestFormPage() {
   const onSubmit = async (values: TestFormOutput) => {
     setSubmitError(null);
 
-    const payload = {
+    const payload: CreateTestPayload = {
       name: values.name,
       type: activeTab,
       subject: values.subject,
@@ -107,12 +122,19 @@ export default function TestFormPage() {
       total_time: values.total_time,
       total_marks: totalMarks,
       total_questions: values.total_questions,
-      status: null,
+      status: "draft",
     };
 
     try {
-      const response = await createTest(payload);
-      setTestId(response.data.id);
+      // Editing an existing draft updates it in place instead of creating
+      // a duplicate test.
+      if (testId) {
+        await updateTest(testId, payload);
+        setTestId(testId);
+      } else {
+        const response = await createTest(payload);
+        setTestId(response.data.id);
+      }
       setTestData(payload);
       navigate("/tests/add-questions");
     } catch (err) {
@@ -125,78 +147,56 @@ export default function TestFormPage() {
   return (
     <>
       {/* Breadcrumb */}
-
-      <div className="w-300 p-5">
-        <div className="w-176.25 text-base font-medium text-black/60 leading-[150%] flex items-center">
-          <Link
-            to="/test-creation"
-            className="hover:text-black hover:underline transition-colors"
-          >
-            Test Creation
-          </Link>
-
-          <span className="mx-2">/</span>
-
-          <Link
-            to="/test-creation/create-test"
-            className="hover:text-black hover:underline transition-colors"
-          >
-            Create Test
-          </Link>
-
-          <span className="mx-2">/</span>
-
-          <Link
-            to={`/test-creation/create-test/${activeTab}`}
-            className="hover:underline transition-colors ml-2"
-          >
-            {activeTabLabel}
-          </Link>
-        </div>
-      </div>
+      <Breadcrumb
+        items={[
+          {
+            label: "Test Creation",
+            to: "/test-creation",
+          },
+          {
+            label: "Create Test",
+            to: `/test-creation/create-test/${testData.type}`,
+          },
+          {
+            label: `${activeTabLabel}`,
+          },
+        ]}
+      />
 
       <div className="p-5">
-        {/* Main form card: 1152 wide, radius-card, gap-[50px] between sections */}
         <div className="w-full rounded-card bg-white">
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-12.5"
           >
             <div className="flex flex-col gap-7.5 space-between">
-              {/* Tabs row */}
               <div>
-                <div className="w-82.5 h-12.5 px-2.5 py-0.5 flex items-center gap-7.5 border-[0.5px] border-input-placeholder rounded-xl">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() =>
-                        navigate(`/tests/create/${tab.key}`, { replace: true })
-                      }
-                      className={`h-10 px-2.75 py-0.75 gap-1.5 rounded-pill text-sm font-medium transition ${
-                        activeTab === tab.key
-                          ? "bg-brand-semiWhite text-sidebar-active"
-                          : "text-input-border"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
+                <TestTypeTabs
+                  activeTab={activeTab}
+                  onChange={(tab) =>
+                    navigate(`/tests/create/${tab}`, { replace: true })
+                  }
+                />
 
                 {dropdownError && (
-                  <p className="text-red-500 text-sm">{dropdownError}</p>
+                  <p className="text-red-500 text-sm mt-2">{dropdownError}</p>
                 )}
               </div>
 
               <div>
                 <div className="grid grid-cols-2 gap-x-12.5 gap-y-7.5 items-st">
-                  <FormSelect
-                    label="Subject"
-                    options={subjects}
-                    error={errors.subject?.message}
-                    currentValue={selectedSubject}
-                    {...register("subject")}
+                  <Controller
+                    control={control}
+                    name="subject"
+                    render={({ field }) => (
+                      <FormSelect
+                        label="Subject"
+                        options={subjects}
+                        error={errors.subject?.message}
+                        currentValue={field.value}
+                        {...field}
+                      />
+                    )}
                   />
 
                   <FormField
@@ -206,24 +206,36 @@ export default function TestFormPage() {
                     {...register("name")}
                   />
 
-                  <FormSelect
-                    label="Topic"
-                    options={topics}
-                    loading={topicsLoading}
-                    disabled={!selectedSubject || topicsLoading}
-                    error={errors.topics?.message}
-                    currentValue={selectedTopic}
-                    {...register("topics")}
+                  <Controller
+                    control={control}
+                    name="topics"
+                    render={({ field }) => (
+                      <FormSelect
+                        label="Topic"
+                        options={topics}
+                        loading={topicsLoading}
+                        disabled={!selectedSubject || topicsLoading}
+                        error={errors.topics?.message}
+                        currentValue={field.value}
+                        {...field}
+                      />
+                    )}
                   />
 
-                  <FormSelect
-                    label="Sub Topic"
-                    options={subTopics}
-                    loading={subTopicsLoading}
-                    disabled={!selectedTopic || subTopicsLoading}
-                    error={errors.sub_topics?.message}
-                    currentValue={selectedSubTopic}
-                    {...register("sub_topics")}
+                  <Controller
+                    control={control}
+                    name="sub_topics"
+                    render={({ field }) => (
+                      <FormSelect
+                        label="Sub Topic"
+                        options={subTopics}
+                        loading={subTopicsLoading}
+                        disabled={!selectedTopic || subTopicsLoading}
+                        error={errors.sub_topics?.message}
+                        currentValue={field.value}
+                        {...field}
+                      />
+                    )}
                   />
 
                   <FormField
@@ -260,14 +272,17 @@ export default function TestFormPage() {
               />
             </div>
 
-            {/* Action buttons: 160x48 each, gap-[20px] */}
             <div className="flex justify-end items-center gap-5">
               {submitError && (
                 <p className="text-red-500 text-sm mr-auto">{submitError}</p>
               )}
               <button
                 type="button"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => {
+                  resetTestDraft();
+                  resetQuestions();
+                  navigate("/dashboard");
+                }}
                 className="w-40 h-12 rounded-pill bg-brand-semiWhite text-sidebar-active font-medium text-base"
               >
                 Cancel
