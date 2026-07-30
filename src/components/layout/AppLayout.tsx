@@ -30,10 +30,9 @@ export default function AppLayout() {
 
   // Re-seed whenever the test changes
   useEffect(() => {
-    if (isAddQuestionsPage && testData) {
-      initQuestions(testData.total_questions ?? 50);
+    if (isAddQuestionsPage && testId && testData) {
+      initQuestions(testId, testData.total_questions ?? 50);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testId]);
 
   const sidebar = isAddQuestionsPage ? (
